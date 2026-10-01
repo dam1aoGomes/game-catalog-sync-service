@@ -1,0 +1,69 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Tier {
+  FREE
+  PRO
+  PREMIUM
+}
+
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String
+  tier         Tier              @default(FREE)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  reviews      Review[]
+  achievements UserAchievement[]
+}
+
+model Game {
+  id          String   @id @default(uuid())
+  externalId  String   @unique // ID na plataforma de origem (ex: Steam, Epic)
+  source      String   // Ex: "STEAM", "EPIC", "GOG"
+  title       String
+  description String?
+  genres      String[]
+  coverUrl    String?
+  reviews     Review[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([title])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      // 1 a 5
+  comment   String?
+  userId    String
+  gameId    String
+  user      User     @relation(fields: [userId], references: [id])
+  game      Game     @relation(fields: [gameId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Achievement {
+  id          String            @id @default(uuid())
+  title       String
+  description String
+  iconUrl     String?
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  userId        String
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id])
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+
+  @@id([userId, achievementId])
+}
